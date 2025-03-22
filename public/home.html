@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Tap2Go</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='style.css'>
+    <script type="text/javascript" src='script.js'></script>
+    <script type="module">
+        import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+      
+        const socket = io();
+
+        socket.on("connect", () => {
+            console.log("Connected to " + socket.id)
+        });
+    </script>
+</head>
+
+<body>
+    <main>
+        <h1>Tap2Go</h1>
+        <em>Tap, verify, and enter!</em>
+        <form>
+            <fieldset name="event-details">
+                <legend>Event Details</legend>
+                <label for="event-id">Event ID: </label>
+                <input type="text" name="event-id" placeholder="some-awesome-event" required
+                    value="holi-celebrations-25" disabled />
+                <br />
+                <label for="amount">Amount: </label>
+                <input type="number" name="amount" value="169" required />
+            </fieldset>
+
+            <fieldset>
+                <legend>Student Details</legend>
+                <label for="student-name">Name: </label>
+                <input type="text" name="student-name" required placeholder="John Doe" />
+                <br />
+                <label for="serial-number">Serial Number: </label>
+                <input type="text" name="serial-number" id="serial-number" required disabled />
+                <button type="button" id="scanBtn">Scan</button>
+                <br />
+                <br />
+                <label for="student-photo">Photo: </label>
+                <input type="file" id="student-photo" accept="image/*" capture="user" />
+                <button type="button" id="retakeBtn">Retake</button>
+                <br />
+                <img id="photoPreview" width="240" height="240" style="display: none;" />
+            </fieldset>
+            <button type="submit" id="writeBtn">Write to Tag</button>
+            <button type="reset">Reset</button>
+        </form>
+        <button id="logout" onclick="window.open('/logout', '_self')">Logout</button>
+        <script type="text/javascript">
+            let scanBtn = document.getElementById("scanBtn")
+            let form = document.forms[0];
+
+            scanBtn.addEventListener("click", async (ev) => {
+                ev.preventDefault()
+                try {
+                    const nfcData = await readNFC();
+
+                    document.getElementById("serial-number").value = nfcData.serialNumber
+                } catch (err) {
+                    log("Error scanning NFC Tag:", err.message)
+                }
+            })
+
+            let photoInput = document.getElementById("student-photo");
+            let retakeBtn = document.getElementById("retakeBtn");
+            let photoPreview = document.getElementById("photoPreview");
+
+            photoInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.src = e.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const ctx = canvas.getContext("2d");
+                            canvas.width = 240;
+                            canvas.height = 204;
+                            ctx.drawImage(img, 0, 0, 240, 204);
+                            photoPreview.src = canvas.toDataURL("image/png");
+                            photoPreview.style.display = "block";
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            retakeBtn.addEventListener("click", () => {
+                photoInput.value = ""; // Reset file input
+                photoPreview.style.display = "none"; // Hide preview
+            });
+
+            form.addEventListener("submit", async (ev) => {
+                ev.preventDefault();
+                const formData = new FormData(form)
+                const payload = {
+                    eventId: form["event-id"].value,
+                    amount: formData.get("amount"),
+                    name: formData.get("student-name"),
+                    serialNumber: form["serial-number"].value,
+                }
+
+                log("Sending data to server...")
+
+                socket.emit("generate-jwt", payload, async (token) => {
+                    log("Tap Card!")
+                    await writeNFC([
+                        {
+                            recordType: "text",
+                            data: token
+                        },
+                        {
+                            recordType: "mime",
+                            mimeType: "image/*",
+                            data: photoPreview.src
+                        }
+                    ])
+                })
+                
+            })
+        </script>
+    </main>
+    <footer>
+        Made with ❤️ by <a href="https://nishithp.page">Nishith P</a>
+    </footer>
+</body>
+
+</html>
