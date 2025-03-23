@@ -6,55 +6,67 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Tap2Go</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <meta name="theme-color" content="#ff5722">
+    <meta name="author" content="Nishith P" />
+    <meta name="description" content="Tap, verify and enter!" />
     <link rel='stylesheet' type='text/css' media='screen' href='style.css'>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Boldonse&family=Didact+Gothic&family=Fredoka:wght@300..700&family=Poppins&family=Righteous&family=Roboto:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://kit.fontawesome.com/50e1c4696b.js" crossorigin="anonymous"></script>
     <script type="text/javascript" src='script.js'></script>
-    <script type="module">
-        import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
-      
-        const socket = io();
-
-        socket.on("connect", () => {
-            console.log("Connected to " + socket.id)
-        });
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"
+        integrity="sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI" crossorigin="anonymous">
     </script>
 </head>
 
 <body>
-    <main>
-        <h1>Tap2Go</h1>
+    <header>
+        <h1>Tap2Go 🚀</h1>
         <em>Tap, verify, and enter!</em>
-        <form>
+    </header>
+    <main>
+        <form class="glass">
             <fieldset name="event-details">
                 <legend>Event Details</legend>
-                <label for="event-id">Event ID: </label>
+                <label for="event-id">Event ID</label>
                 <input type="text" name="event-id" placeholder="some-awesome-event" required
                     value="holi-celebrations-25" disabled />
                 <br />
-                <label for="amount">Amount: </label>
+                <label for="amount">Amount</label>
                 <input type="number" name="amount" value="169" required />
             </fieldset>
 
             <fieldset>
                 <legend>Student Details</legend>
-                <label for="student-name">Name: </label>
+                <label for="student-name">Name</label>
                 <input type="text" name="student-name" required placeholder="John Doe" />
                 <br />
-                <label for="serial-number">Serial Number: </label>
+                <label for="serial-number">Serial Number</label>
                 <input type="text" name="serial-number" id="serial-number" required disabled />
-                <button type="button" id="scanBtn">Scan</button>
+                <button type="button" id="scanBtn">Scan <i class="fa-regular fa-id-badge"></i></button>
                 <br />
                 <br />
-                <label for="student-photo">Photo: </label>
+                <label for="student-photo">Photo</label>
                 <input type="file" id="student-photo" accept="image/*" capture="user" />
-                <button type="button" id="retakeBtn">Retake</button>
+                <button type="button" id="retakeBtn">Retake <i class="fa-solid fa-camera-retro"></i></button>
                 <br />
                 <img id="photoPreview" width="240" height="240" style="display: none;" />
             </fieldset>
-            <button type="submit" id="writeBtn">Write to Tag</button>
-            <button type="reset">Reset</button>
+            <button type="submit" id="writeBtn">Write to Tag <i class="fa-solid fa-pen-to-square"></i></button>
+            <button type="reset">Reset <i class="fa-solid fa-eraser"></i></button>
         </form>
-        <button id="logout" onclick="window.open('/logout', '_self')">Logout</button>
+        <button id="logout" onclick="window.open('/logout', '_self')">Logout <i class="fa-solid fa-power-off"></i></button>
         <script type="text/javascript">
+            const socket = io();
+
+            socket.on("connect", () => {
+                console.log("Connected to " + socket.id);
+            });
+
             let scanBtn = document.getElementById("scanBtn")
             let form = document.forms[0];
 
@@ -113,8 +125,7 @@
 
                 socket.emit("generate-jwt", payload, async (token) => {
                     log("Tap Card!")
-                    await writeNFC([
-                        {
+                    await writeNFC([{
                             recordType: "text",
                             data: token
                         },
@@ -125,11 +136,11 @@
                         }
                     ])
                 })
-                
+
             })
         </script>
     </main>
-    <footer>
+    <footer class="glass">
         Made with ❤️ by <a href="https://nishithp.page">Nishith P</a>
     </footer>
 </body>

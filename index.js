@@ -59,6 +59,7 @@ const BASE_PATH = __dirname + "/public/"
 const authenticate = (req, res, next) => {
     const cookies = parseCookie(req.headers.cookie || "");
     const serialNumber = req.session.serialNumber || cookies["serialNumber"];
+    console.log("Serial Number: " + serialNumber)
 
     if (!serialNumber || !authorisedCards.includes(serialNumber)) {
         return res.redirect(301, "/login");
