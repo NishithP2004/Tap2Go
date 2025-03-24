@@ -4,7 +4,7 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Tap2Go</title>
+    <title>Tap2Go | Home</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <meta name="theme-color" content="#ff5722">
     <meta name="author" content="Nishith P" />
@@ -49,17 +49,21 @@
                 <input type="text" name="serial-number" id="serial-number" required disabled />
                 <button type="button" id="scanBtn">Scan <i class="fa-regular fa-id-badge"></i></button>
                 <br />
-                <br />
+                <!-- <br />
                 <label for="student-photo">Photo</label>
                 <input type="file" id="student-photo" accept="image/*" capture="user" />
                 <button type="button" id="retakeBtn">Retake <i class="fa-solid fa-camera-retro"></i></button>
                 <br />
-                <img id="photoPreview" width="240" height="240" style="display: none;" />
+                <img id="photoPreview" width="240" height="240" style="display: none;" /> -->
             </fieldset>
-            <button type="submit" id="writeBtn">Write to Tag <i class="fa-solid fa-pen-to-square"></i></button>
+            <!-- <button type="submit" id="writeBtn">Write to Tag <i class="fa-solid fa-pen-to-square"></i></button> -->
+            <button type="submit" id="submitBtn">Submit <i class="fa-solid fa-paper-plane"></i></i></button>
             <button type="reset">Reset <i class="fa-solid fa-eraser"></i></button>
         </form>
-        <button id="logout" onclick="window.open('/logout', '_self')">Logout <i class="fa-solid fa-power-off"></i></button>
+        <br />
+        <button id="verify">Verify <i class="fa-solid fa-certificate"></i></button>
+        <button id="logout" onclick="window.open('/logout', '_self')">Logout <i
+                class="fa-solid fa-power-off"></i></button>
         <script type="text/javascript">
             const socket = io();
 
@@ -68,6 +72,8 @@
             });
 
             let scanBtn = document.getElementById("scanBtn")
+            let submitBtn = document.getElementById("submitBtn")
+            let verifyBtn = document.getElementById("verify")
             let form = document.forms[0];
 
             scanBtn.addEventListener("click", async (ev) => {
@@ -81,7 +87,7 @@
                 }
             })
 
-            let photoInput = document.getElementById("student-photo");
+            /* let photoInput = document.getElementById("student-photo");
             let retakeBtn = document.getElementById("retakeBtn");
             let photoPreview = document.getElementById("photoPreview");
 
@@ -109,7 +115,7 @@
             retakeBtn.addEventListener("click", () => {
                 photoInput.value = ""; // Reset file input
                 photoPreview.style.display = "none"; // Hide preview
-            });
+            }); */
 
             form.addEventListener("submit", async (ev) => {
                 ev.preventDefault();
@@ -121,13 +127,13 @@
                     serialNumber: form["serial-number"].value,
                 }
 
-                log("Sending data to server...")
+                /* log("Sending data to server...")
 
-                socket.emit("generate-jwt", payload, async (token) => {
+                socket.emit("generate-jwt", payload, async ({ jwt }) => {
                     log("Tap Card!")
                     await writeNFC([{
                             recordType: "text",
-                            data: token
+                            data: jwt
                         },
                         {
                             recordType: "mime",
@@ -135,8 +141,40 @@
                             data: photoPreview.src
                         }
                     ])
-                })
+                   await writeNFC(jwt)
+                }) */
 
+                socket.emit("register", payload, res => {
+                    if (res.success) {
+                        log("Registration Successful!")
+                        form.reset()
+                    } else {
+                        log("Error processing registration: " + res.error)
+                    }
+                })
+            })
+
+            verifyBtn.addEventListener("click", async (ev) => {
+                ev.preventDefault();
+                try {
+                    const nfcData = await readNFC();
+                    const payload = {
+                        eventId: form["event-id"].value,
+                        serialNumber: nfcData.serialNumber
+                    }
+
+                    socket.emit("verify", payload, res => {
+                        if (res.success && res.verified) {
+                            log(`Verified!\nWelcome ${res.data.name}`)
+                        } else if(res.success && res.data && res.data.checkedIn) {
+                            log(`User already checked in!`)
+                        } else {
+                            log(`Invalid Registration!`)
+                        }
+                    })
+                } catch (err) {
+                    log("Error:", err.message)
+                }
             })
         </script>
     </main>

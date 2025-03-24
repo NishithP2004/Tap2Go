@@ -1,5 +1,5 @@
-require("dotenv").config()
-const { SignJWT, jwtVerify } = require("jose")
+import "dotenv/config"
+import { SignJWT, jwtVerify } from "jose"
 
 const key = process.env.SESSION_SECRET
 const encoder = new TextEncoder()
@@ -50,7 +50,7 @@ async function verifyJWT(token) {
     }
 }
 
-module.exports = {
+export {
     getAuthorisedCards,
     parseCookie,
     signJWT,

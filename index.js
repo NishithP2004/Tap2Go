@@ -1,14 +1,27 @@
-const express = require("express")
-const { createServer } = require("node:http")
-const { Server } = require("socket.io")
-require("dotenv").config()
-const session = require("express-session")
-const {
+import express from "express"
+import {
+    createServer
+} from "node:http"
+import {
+    Server
+} from "socket.io"
+import "dotenv/config"
+import session from "express-session"
+import {
     getAuthorisedCards,
     parseCookie,
     signJWT,
     verifyJWT
-} = require("./utils")
+} from "./utils.js"
+import {
+    connectToDatabase
+} from "./mongo.js"
+import {
+    fileURLToPath
+} from "node:url"
+import path from "node:path"
+
+const db = await connectToDatabase()
 
 const app = express()
 
@@ -22,7 +35,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        maxAge: 60000, 
+        maxAge: 60000,
         secure: "auto"
     }
 }))
@@ -34,7 +47,7 @@ const io = new Server(server);
 io.on("connection", client => {
     console.log(`Connected to ${client.id}`)
 
-    client.on("generate-jwt", async (payload, callback) => {
+    /* client.on("generate-jwt", async (payload, callback) => {
         console.log(payload)
         const jwt = await signJWT(payload)
         console.log(jwt)
@@ -48,12 +61,76 @@ io.on("connection", client => {
         callback({
             payload
         })
+    }) */
+
+    client.on("register", async (data, callback) => {
+        try {
+            const collection = db.collection("registrations")
+            const res = await collection.updateOne({
+                eventId: data.eventId,
+                serialNumber: data.serialNumber
+            }, {
+                $set: {
+                    eventId: data.eventId,
+                    serialNumber: data.serialNumber,
+                    amount: data.amount,
+                    name: data.name,
+                    checkedIn: false
+                }
+            }, {
+                upsert: true
+            })
+
+            callback({
+                success: res.acknowledged
+            })
+        } catch (err) {
+            callback({
+                success: false,
+                error: err.message
+            })
+        }
     })
+
+    client.on("verify", async (data, callback) => {
+        try {
+            const collection = db.collection("registrations");
+            const res = await collection.findOneAndUpdate(
+                {
+                    eventId: data.eventId,
+                    serialNumber: data.serialNumber
+                },
+                {
+                    $set: { checkedIn: true }
+                },
+                {
+                    projection: { _id: 0 },
+                    returnDocument: "before" 
+                }
+            );
+    
+            callback({
+                success: true,
+                verified: res !== null && res.checkedIn === false, 
+                data: res
+            });
+        } catch (err) {
+            console.error("Error verifying registration: " + err.message);
+            callback({
+                error: err.message
+            });
+        }
+    });
+    
 })
 
 const PORT = process.env.PORT || 3000
 
 const authorisedCards = []
+
+const __filename = fileURLToPath(
+    import.meta.url)
+const __dirname = path.dirname(__filename)
 const BASE_PATH = __dirname + "/public/"
 
 const authenticate = (req, res, next) => {
@@ -63,7 +140,7 @@ const authenticate = (req, res, next) => {
 
     if (!serialNumber || !authorisedCards.includes(serialNumber)) {
         return res.redirect(301, "/login");
-    } 
+    }
     next();
 };
 
@@ -82,7 +159,7 @@ app.get("/logout", authenticate, (req, res) => {
 
 app.get("/admin/verify", (req, res) => {
     const cookie = req.headers.cookie
-    if(!cookie)
+    if (!cookie)
         res.sendStatus(400)
 
     const cookies = parseCookie(cookie)
@@ -96,7 +173,7 @@ app.get("/admin/verify", (req, res) => {
                 console.error("Session regeneration error:", err);
                 return res.sendStatus(500);
             }
-            
+
             req.session.serialNumber = serialNumber;
             req.session.save(err => {
                 if (err) {
@@ -117,7 +194,7 @@ app.get("/home", authenticate, (req, res) => {
 })
 
 server.listen(PORT, async () => {
-    authorisedCards.push(...await getAuthorisedCards())
+    authorisedCards.push(...(await getAuthorisedCards()))
     console.log(`Listening on port: ${PORT}`)
     console.log("Authorised Users:", authorisedCards)
 })

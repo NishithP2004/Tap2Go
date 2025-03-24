@@ -100,7 +100,7 @@ button:hover {
 
 #logout {
     background: red;
-    color: white;
+    color: beige;
     margin-top: 20px;
     border: 1px solid pink;
 }
@@ -115,6 +115,13 @@ footer {
 footer a {
     color: gold;
     text-decoration: none;
+    transition: all 0.25s ease-in-out;
+}
+
+footer a:hover {
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+    color: bisque;
 }
 
 input[type="file"] {
@@ -147,4 +154,10 @@ input[type="file"]::before {
 
 input[type="file"]:hover::before {
     background: #e64a19; /* Darker hover effect */
+}
+
+button#verify {
+    background-color: limegreen;
+    color: beige;
+    border: 1px solid pink;
 }
